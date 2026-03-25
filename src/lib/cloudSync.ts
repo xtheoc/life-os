@@ -3,15 +3,21 @@ import type { AppState } from '../types'
 
 const TABLE = 'life_os_state'
 
+async function getSession() {
+  if (!supabase) return null
+  const { data: { session } } = await supabase.auth.getSession()
+  return session
+}
+
 export async function loadFromCloud(): Promise<AppState | null> {
   if (!supabase) return null
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
+    const session = await getSession()
+    if (!session?.user) return null
     const { data, error } = await supabase
       .from(TABLE)
       .select('state')
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .single()
     if (error || !data) return null
     return data.state as AppState
@@ -23,16 +29,18 @@ export async function loadFromCloud(): Promise<AppState | null> {
 export async function saveToCloud(state: AppState): Promise<boolean> {
   if (!supabase) return false
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return false
+    const session = await getSession()
+    if (!session?.user) return false
     const { error } = await supabase
       .from(TABLE)
       .upsert(
-        { user_id: user.id, state, updated_at: new Date().toISOString() },
+        { user_id: session.user.id, state, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       )
+    if (error) console.error('[cloudSync] save error:', error.message)
     return !error
-  } catch {
+  } catch (e) {
+    console.error('[cloudSync] save exception:', e)
     return false
   }
 }

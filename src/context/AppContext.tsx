@@ -485,24 +485,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) return
 
-    // Get current session on mount
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      userRef.current = user
-      setSyncStatus(s => ({ ...s, user }))
-      if (user) {
-        const cloudState = await loadFromCloud()
-        if (cloudState?.initialized) {
-          dispatch({ type: 'LOAD_STATE', payload: cloudState })
-        }
-      }
-    })
-
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user ?? null
       userRef.current = user
       setSyncStatus(s => ({ ...s, user }))
-      if (event === 'SIGNED_IN' && user) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && user) {
         const cloudState = await loadFromCloud()
         if (cloudState?.initialized) {
           dispatch({ type: 'LOAD_STATE', payload: cloudState })
