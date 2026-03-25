@@ -472,7 +472,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       setSyncStatus(s => ({ ...s, syncing: true, error: null }))
-      const ok = await saveToCloud(state, userId)
+      const ok = await Promise.race([
+        saveToCloud(state, userId),
+        new Promise<boolean>(resolve => setTimeout(() => resolve(false), 10000)),
+      ])
       setSyncStatus(s => ({
         ...s,
         syncing: false,
@@ -515,14 +518,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSyncStatus(s => ({ ...s, user: null, lastSynced: null }))
     },
     syncNow: async () => {
+      if (!userRef.current) return
       setSyncStatus(s => ({ ...s, syncing: true, error: null }))
-      const ok = userRef.current ? await saveToCloud(stateRef.current, userRef.current.id) : false
-      setSyncStatus(s => ({
-        ...s,
-        syncing: false,
-        lastSynced: ok ? new Date() : s.lastSynced,
-        error: ok ? null : 'Sync failed',
-      }))
+      const cloudState = await loadFromCloud(userRef.current.id)
+      if (cloudState?.initialized) {
+        dispatch({ type: 'LOAD_STATE', payload: cloudState })
+      }
+      setSyncStatus(s => ({ ...s, syncing: false, lastSynced: new Date(), error: null }))
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [])
