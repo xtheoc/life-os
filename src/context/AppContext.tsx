@@ -467,11 +467,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     storage.set(STORAGE_KEY, state)
 
+    console.log('[sync] state changed, user:', userRef.current?.email ?? 'null')
     if (!isSupabaseConfigured || !userRef.current) return
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
+      console.log('[sync] saving to cloud...')
       setSyncStatus(s => ({ ...s, syncing: true, error: null }))
       const ok = await saveToCloud(state)
+      console.log('[sync] save result:', ok)
       setSyncStatus(s => ({
         ...s,
         syncing: false,
