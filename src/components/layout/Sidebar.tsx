@@ -2,37 +2,14 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   Home, GraduationCap, ListChecks, TrendingUp, CalendarDays,
-  Dumbbell, Moon, Settings, LayoutDashboard, Sparkles, ChevronDown, ChevronRight, ClipboardList,
+  Dumbbell, Moon, Settings, LayoutDashboard, Sparkles,
+  ChevronDown, ChevronRight, ClipboardList, CalendarClock,
 } from 'lucide-react'
 
-const SINGLE_NAV = [
-  { to: '/', icon: Home, label: 'Home', end: true },
-  { to: '/school', icon: GraduationCap, label: 'School', end: false },
-]
-
-const TODO_NAV = [
-  { to: '/tasks', icon: ListChecks, label: 'Tasks', end: false },
-  { to: '/chores', icon: Sparkles, label: 'Chores', end: false },
-]
-
-const BOTTOM_NAV = [
-  { to: '/finance', icon: TrendingUp, label: 'Finance', end: false },
-  { to: '/calendar', icon: CalendarDays, label: 'Calendar', end: false },
-  { to: '/review', icon: ClipboardList, label: 'Weekly Review', end: false },
-  { to: '/workout', icon: Dumbbell, label: 'Workout', end: false },
-  { to: '/sleep', icon: Moon, label: 'Sleep', end: false },
-]
-
 function NavItem({
-  to,
-  icon: Icon,
-  label,
-  end,
+  to, icon: Icon, label, end = false,
 }: {
-  to: string
-  icon: React.ElementType
-  label: string
-  end: boolean
+  to: string; icon: React.ElementType; label: string; end?: boolean
 }) {
   return (
     <NavLink
@@ -40,9 +17,7 @@ function NavItem({
       end={end}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-          isActive
-            ? 'bg-accent/15 text-accent'
-            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+          isActive ? 'bg-accent/15 text-accent' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
         }`
       }
     >
@@ -52,9 +27,27 @@ function NavItem({
   )
 }
 
-export default function Sidebar() {
-  const [todoOpen, setTodoOpen] = useState(true)
+function Group({
+  label, children, defaultOpen = true,
+}: {
+  label: string; children: React.ReactNode; defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="pt-1">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-display font-semibold text-muted uppercase tracking-wider hover:text-slate-300 transition-colors"
+      >
+        <span>{label}</span>
+        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+      </button>
+      {open && <div className="pl-2 space-y-0.5 mt-0.5">{children}</div>}
+    </div>
+  )
+}
 
+export default function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-60 shrink-0 bg-surface border-r border-border h-full">
       {/* Logo */}
@@ -62,45 +55,32 @@ export default function Sidebar() {
         <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
           <LayoutDashboard size={16} className="text-accent" />
         </div>
-        <span className="font-display text-base font-bold text-white tracking-tight">
-          Life OS
-        </span>
+        <span className="font-display text-base font-bold text-white tracking-tight">Life OS</span>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {SINGLE_NAV.map(item => (
-          <NavItem key={item.to} {...item} />
-        ))}
+        <NavItem to="/" icon={Home} label="Home" end />
+        <NavItem to="/calendar" icon={CalendarDays} label="Calendar" />
+        <NavItem to="/planner" icon={CalendarClock} label="Today's Plan" />
+        <NavItem to="/school" icon={GraduationCap} label="School" />
 
-        {/* To-Do group */}
-        <div className="pt-1">
-          <button
-            onClick={() => setTodoOpen(o => !o)}
-            className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-display font-semibold text-muted uppercase tracking-wider hover:text-slate-300 transition-colors"
-          >
-            <span>To-Do</span>
-            {todoOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          </button>
-          {todoOpen && (
-            <div className="pl-2 space-y-0.5 mt-0.5">
-              {TODO_NAV.map(item => (
-                <NavItem key={item.to} {...item} />
-              ))}
-            </div>
-          )}
-        </div>
+        <Group label="To-Do">
+          <NavItem to="/tasks" icon={ListChecks} label="Tasks" />
+          <NavItem to="/chores" icon={Sparkles} label="Chores" />
+        </Group>
 
-        <div className="pt-1 space-y-0.5">
-          {BOTTOM_NAV.map(item => (
-            <NavItem key={item.to} {...item} />
-          ))}
-        </div>
+        <Group label="Trackers">
+          <NavItem to="/finance" icon={TrendingUp} label="Finance" />
+          <NavItem to="/workout" icon={Dumbbell} label="Workout" />
+          <NavItem to="/sleep" icon={Moon} label="Sleep" />
+        </Group>
       </nav>
 
-      {/* Settings pinned at bottom */}
-      <div className="p-3 border-t border-border">
-        <NavItem to="/settings" icon={Settings} label="Settings" end={false} />
+      {/* Weekly Review + Settings pinned at bottom */}
+      <div className="p-3 border-t border-border space-y-0.5">
+        <NavItem to="/review" icon={ClipboardList} label="Weekly Review" />
+        <NavItem to="/settings" icon={Settings} label="Settings" />
       </div>
     </aside>
   )
