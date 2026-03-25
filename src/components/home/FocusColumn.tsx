@@ -30,10 +30,20 @@ export default function FocusColumn({ taskInputRef }: Props) {
 
   const today = format(new Date(), 'yyyy-MM-dd')
 
-  const dueTasks = [...tasks]
-    .filter(t => !t.completed && t.dueDate && t.dueDate <= today)
-    .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
-    .slice(0, 4)
+  // Tasks due today or overdue
+  const dueTasks = [...tasks].filter(t => !t.completed && t.dueDate && t.dueDate <= today)
+  // High/urgent tasks with no due date, to fill remaining slots
+  const undatedUrgent = [...tasks].filter(
+    t => !t.completed && !t.dueDate && (t.priority === 'urgent' || t.priority === 'high')
+  )
+  const focusTasks = [...dueTasks, ...undatedUrgent]
+    .sort((a, b) => {
+      const aOv = a.dueDate && a.dueDate < today ? -1 : 0
+      const bOv = b.dueDate && b.dueDate < today ? -1 : 0
+      if (aOv !== bOv) return aOv - bOv
+      return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
+    })
+    .slice(0, 5)
 
   const dueChores = choreSchedules
     .filter(c => c.active && nextDue(c) <= today)
@@ -52,7 +62,7 @@ export default function FocusColumn({ taskInputRef }: Props) {
     setInput('')
   }
 
-  const empty = dueTasks.length === 0 && dueChores.length === 0
+  const empty = focusTasks.length === 0 && dueChores.length === 0
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
@@ -89,7 +99,7 @@ export default function FocusColumn({ taskInputRef }: Props) {
         ) : (
           <div className="space-y-3">
             {/* Tasks */}
-            {dueTasks.length > 0 && (
+            {focusTasks.length > 0 && (
               <div>
                 <div className="flex items-center justify-between px-2 mb-1">
                   <span className="text-[10px] font-display font-semibold text-muted uppercase tracking-wider">Tasks</span>
@@ -98,7 +108,7 @@ export default function FocusColumn({ taskInputRef }: Props) {
                   </Link>
                 </div>
                 <ul className="space-y-0.5">
-                  {dueTasks.map(t => (
+                  {focusTasks.map(t => (
                     <li key={t.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/4 transition-colors">
                       <button
                         onClick={() => {
@@ -111,9 +121,12 @@ export default function FocusColumn({ taskInputRef }: Props) {
                         <Check size={10} className="text-success opacity-0 hover:opacity-100" />
                       </button>
                       <span className="flex-1 text-sm text-slate-200 font-display truncate">{t.title}</span>
-                      {t.dueDate != null && t.dueDate < today && (
-                        <span className="text-[10px] font-mono text-danger shrink-0">overdue</span>
-                      )}
+                      {t.dueDate == null
+                        ? <span className="text-[10px] font-mono text-muted shrink-0">{t.priority}</span>
+                        : t.dueDate < today
+                          ? <span className="text-[10px] font-mono text-danger shrink-0">overdue</span>
+                          : <span className="text-[10px] font-mono text-warning shrink-0">today</span>
+                      }
                     </li>
                   ))}
                 </ul>

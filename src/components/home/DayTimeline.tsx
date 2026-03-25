@@ -1,41 +1,71 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarClock, ArrowRight } from 'lucide-react'
+import { CalendarClock, ArrowRight, Check } from 'lucide-react'
 import { format } from 'date-fns'
-import { useAppState } from '../../context/AppContext'
+import { useAppState, useAppDispatch } from '../../context/AppContext'
 import { generateDayPlan, BLOCK_COLORS } from '../../lib/plannerUtils'
 import type { PlannerBlock } from '../../types'
 
-function BlockRow({ block, isCurrent }: { block: PlannerBlock; isCurrent: boolean }) {
+interface BlockRowProps {
+  block: PlannerBlock
+  isCurrent: boolean
+  isDone: boolean
+  isPast: boolean
+  onToggle: (id: string) => void
+  isSaved: boolean
+}
+
+function BlockRow({ block, isCurrent, isDone, isPast, onToggle, isSaved }: BlockRowProps) {
   const color = BLOCK_COLORS[block.type] ?? BLOCK_COLORS.custom
+
   return (
     <div
       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
         isCurrent
-          ? 'bg-white/8 ring-1 ring-white/20'
+          ? 'bg-accent/10 ring-1 ring-accent/30'
+          : isDone
+          ? 'opacity-40'
+          : isPast
+          ? 'opacity-60'
           : 'hover:bg-white/4'
       }`}
     >
-      {/* Left accent bar */}
+      {/* Left accent bar / pulse indicator */}
       <div
         className={`w-0.5 h-8 rounded-full shrink-0 ${isCurrent ? 'animate-pulse' : ''}`}
-        style={{ backgroundColor: color }}
+        style={{ backgroundColor: color, opacity: isDone ? 0.4 : 1 }}
       />
+
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-display font-medium truncate ${isCurrent ? 'text-white' : 'text-slate-300'}`}>
+        <p className={`text-sm font-display font-medium truncate ${
+          isCurrent ? 'text-white' : isDone ? 'text-muted line-through' : 'text-slate-300'
+        }`}>
           {block.title}
         </p>
         <p className="font-mono text-[11px] text-muted mt-0.5">
           {block.startTime} – {block.endTime}
         </p>
       </div>
-      {isCurrent && (
+
+      {isCurrent && !isDone && (
         <span className="text-[10px] font-display font-semibold text-accent bg-accent/15 px-2 py-0.5 rounded-full shrink-0">
           Now
         </span>
       )}
-      {block.completed && !isCurrent && (
-        <span className="text-[10px] text-muted font-display shrink-0">Done</span>
+
+      {/* Tick-off button — only for saved blocks */}
+      {isSaved && (
+        <button
+          onClick={() => onToggle(block.id)}
+          className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+            isDone
+              ? 'border-success/50 bg-success/15'
+              : 'border-border hover:border-success'
+          }`}
+          aria-label={isDone ? 'Mark incomplete' : 'Mark done'}
+        >
+          {isDone && <Check size={10} className="text-success" />}
+        </button>
       )}
     </div>
   )
@@ -43,6 +73,7 @@ function BlockRow({ block, isCurrent }: { block: PlannerBlock; isCurrent: boolea
 
 export default function DayTimeline() {
   const { plannerBlocks, preferences, recurringEvents, assignments, tasks, workoutPlan, choreSchedules } = useAppState()
+  const dispatch = useAppDispatch()
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   const savedBlocks = plannerBlocks
@@ -63,10 +94,17 @@ export default function DayTimeline() {
   }, [savedBlocks.length, todayStr, preferences, recurringEvents, assignments, tasks, workoutPlan, choreSchedules])
 
   const blocks = savedBlocks.length > 0 ? savedBlocks : autoBlocks
+  const isSaved = savedBlocks.length > 0
   const nowStr = format(new Date(), 'HH:mm')
-  const MAX = 6
+  const MAX = 7
 
   const currentIdx = blocks.findIndex(b => b.startTime <= nowStr && nowStr < b.endTime)
+
+  function toggleBlock(id: string) {
+    const block = savedBlocks.find(b => b.id === id)
+    if (!block) return
+    dispatch({ type: 'UPDATE_PLANNER_BLOCK', payload: { ...block, completed: !block.completed } })
+  }
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -93,7 +131,15 @@ export default function DayTimeline() {
       ) : (
         <div className="px-2 py-2 space-y-0.5">
           {blocks.slice(0, MAX).map((block, i) => (
-            <BlockRow key={block.id} block={block} isCurrent={i === currentIdx} />
+            <BlockRow
+              key={block.id}
+              block={block}
+              isCurrent={i === currentIdx}
+              isDone={!!block.completed}
+              isPast={block.endTime < nowStr}
+              onToggle={toggleBlock}
+              isSaved={isSaved}
+            />
           ))}
           {blocks.length > MAX && (
             <Link
@@ -102,6 +148,11 @@ export default function DayTimeline() {
             >
               +{blocks.length - MAX} more →
             </Link>
+          )}
+          {!isSaved && blocks.length > 0 && (
+            <p className="text-center text-[10px] text-muted font-display py-1">
+              Save plan in Calendar to tick off items
+            </p>
           )}
         </div>
       )}

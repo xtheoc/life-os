@@ -44,9 +44,12 @@ export default function VitalsColumn() {
 
   // Workout
   const streak = computeStreak(workoutSessions, workoutPlan)
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
   const todayDow = new Date().getDay() as DayOfWeek
   const todayPlan = workoutPlan.days.find(d => d.dayOfWeek === todayDow)
-  const workoutLabel = todayPlan ? (todayPlan.isRest ? 'Rest day' : todayPlan.label) : 'No plan'
+  const todaySession = workoutSessions.find(s => s.date === todayStr)
+  const isRestDay = !todayPlan || todayPlan.isRest
+  const workoutDone = !!todaySession
 
   // Finance
   const latestImport = [...financeImports].sort((a, b) => b.month.localeCompare(a.month))[0] ?? null
@@ -90,19 +93,27 @@ export default function VitalsColumn() {
 
         {/* Workout */}
         <div className="flex items-start gap-3 px-4 py-3.5">
-          <Dumbbell size={16} className="text-success mt-0.5 shrink-0" />
+          <Dumbbell size={16} className={`mt-0.5 shrink-0 ${isRestDay ? 'text-muted' : workoutDone ? 'text-success' : 'text-warning'}`} />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-display font-semibold text-muted uppercase tracking-wider mb-1">Workout</p>
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-display font-medium ${todayPlan?.isRest ? 'text-muted' : 'text-slate-200'}`}>
-                {workoutLabel}
-              </span>
-              {streak > 0 && (
-                <span className="flex items-center gap-1 text-[11px] font-mono text-warning">
-                  <Flame size={11} /> {streak}
-                </span>
-              )}
-            </div>
+            {isRestDay ? (
+              <span className="text-sm font-display text-muted">Rest day</span>
+            ) : workoutDone ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-display font-medium text-success">Done</span>
+                <span className="text-xs text-muted font-display">{todayPlan?.label}</span>
+                {streak > 0 && (
+                  <span className="flex items-center gap-1 text-[11px] font-mono text-warning">
+                    <Flame size={11} /> {streak}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-display font-medium text-warning">Pending</span>
+                <span className="text-xs text-muted font-display truncate">{todayPlan?.label}</span>
+              </div>
+            )}
           </div>
           <Link to="/workout" className="text-[11px] text-muted hover:text-accent font-display flex items-center gap-0.5 transition-colors shrink-0 mt-0.5">
             <ArrowRight size={11} />
