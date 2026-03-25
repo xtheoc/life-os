@@ -460,13 +460,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   })
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const stateRef = useRef<AppState>(state)
+  const userRef = useRef<User | null>(null)
   stateRef.current = state
 
   // Save to localStorage immediately + cloud sync (debounced)
   useEffect(() => {
     storage.set(STORAGE_KEY, state)
 
-    if (!isSupabaseConfigured || !syncStatus.user) return
+    if (!isSupabaseConfigured || !userRef.current) return
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       setSyncStatus(s => ({ ...s, syncing: true, error: null }))
@@ -486,6 +487,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     // Get current session on mount
     supabase.auth.getUser().then(async ({ data: { user } }) => {
+      userRef.current = user
       setSyncStatus(s => ({ ...s, user }))
       if (user) {
         const cloudState = await loadFromCloud()
@@ -498,6 +500,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user ?? null
+      userRef.current = user
       setSyncStatus(s => ({ ...s, user }))
       if (event === 'SIGNED_IN' && user) {
         const cloudState = await loadFromCloud()
@@ -506,6 +509,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
       if (event === 'SIGNED_OUT') {
+        userRef.current = null
         setSyncStatus(s => ({ ...s, lastSynced: null, error: null }))
       }
     })
