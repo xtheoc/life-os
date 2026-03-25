@@ -13,7 +13,7 @@ import type { User } from '@supabase/supabase-js'
 import { storage } from '../lib/storage'
 import { createSeedData } from '../data/seedData'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { loadFromCloud, saveToCloud, signInWithOtp, verifyOtp as verifySupabaseOtp, signOut as supabaseSignOut } from '../lib/cloudSync'
+import { loadFromCloud, saveToCloud, getCloudUpdatedAt, signInWithOtp, verifyOtp as verifySupabaseOtp, signOut as supabaseSignOut } from '../lib/cloudSync'
 import type { AppState, AppAction, UserPreferences } from '../types'
 
 // ─── Storage key ─────────────────────────────────────────────────────────────
@@ -461,6 +461,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const stateRef = useRef<AppState>(state)
   const userRef = useRef<User | null>(null)
+  const lastSyncedRef = useRef<Date | null>(null)
   stateRef.current = state
 
   // Save to localStorage immediately + cloud sync (debounced)
@@ -476,6 +477,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         saveToCloud(state, userId),
         new Promise<boolean>(resolve => setTimeout(() => resolve(false), 10000)),
       ])
+      if (ok) lastSyncedRef.current = new Date()
       setSyncStatus(s => ({
         ...s,
         syncing: false,
@@ -510,6 +512,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Poll every 30s — load from cloud if another device saved newer data
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    const interval = setInterval(async () => {
+      if (!userRef.current) return
+      const remoteUpdatedAt = await getCloudUpdatedAt(userRef.current.id)
+      if (!remoteUpdatedAt) return
+      if (!lastSyncedRef.current || remoteUpdatedAt > lastSyncedRef.current) {
+        const cloudState = await loadFromCloud(userRef.current.id)
+        if (cloudState?.initialized) {
+          lastSyncedRef.current = new Date()
+          dispatch({ type: 'LOAD_STATE', payload: cloudState })
+          setSyncStatus(s => ({ ...s, lastSynced: new Date() }))
+        }
+      }
+    }, 30000)
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const syncActions = useMemo<SyncActions>(() => ({
     signIn: signInWithOtp,
     verifyOtp: verifySupabaseOtp,
@@ -522,6 +544,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSyncStatus(s => ({ ...s, syncing: true, error: null }))
       const cloudState = await loadFromCloud(userRef.current.id)
       if (cloudState?.initialized) {
+        lastSyncedRef.current = new Date()
         dispatch({ type: 'LOAD_STATE', payload: cloudState })
       }
       setSyncStatus(s => ({ ...s, syncing: false, lastSynced: new Date(), error: null }))

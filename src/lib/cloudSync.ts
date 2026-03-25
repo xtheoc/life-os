@@ -39,6 +39,19 @@ async function dbFetch(path: string, options: RequestInit = {}): Promise<Respons
   }
 }
 
+export async function getCloudUpdatedAt(userId: string): Promise<Date | null> {
+  if (!isSupabaseConfigured) return null
+  try {
+    const res = await dbFetch(`${TABLE}?user_id=eq.${userId}&select=updated_at`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const ts = data[0]?.updated_at
+    return ts ? new Date(ts) : null
+  } catch {
+    return null
+  }
+}
+
 export async function loadFromCloud(userId: string): Promise<AppState | null> {
   if (!isSupabaseConfigured) return null
   try {
