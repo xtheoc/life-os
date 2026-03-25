@@ -81,7 +81,11 @@ export default function SyncSection() {
             Sync now
           </button>
           <button
-            onClick={actions.signOut}
+            onClick={() => {
+              // Clear all Supabase auth keys from localStorage then reload
+              Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k))
+              window.location.reload()
+            }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white/5 text-muted hover:bg-danger/20 hover:text-danger transition-colors"
           >
             <LogOut size={12} />
