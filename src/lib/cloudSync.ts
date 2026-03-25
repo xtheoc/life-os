@@ -1,34 +1,66 @@
-import { supabase } from './supabase'
+import { supabase, isSupabaseConfigured } from './supabase'
 import type { AppState } from '../types'
 
 const TABLE = 'life_os_state'
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+
+// Read access token directly from localStorage — avoids Supabase JS client lock
+function getStoredToken(): string | null {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key?.startsWith('sb-') && key.endsWith('-auth-token')) {
+      try {
+        const data = JSON.parse(localStorage.getItem(key) ?? '')
+        return data?.access_token ?? null
+      } catch { return null }
+    }
+  }
+  return null
+}
+
+async function dbFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  const token = getStoredToken()
+  const controller = new AbortController()
+  const t = setTimeout(() => controller.abort(), 10000)
+  try {
+    return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token ?? SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        ...(options.headers ?? {}),
+      },
+    })
+  } finally {
+    clearTimeout(t)
+  }
+}
 
 export async function loadFromCloud(userId: string): Promise<AppState | null> {
-  if (!supabase) return null
+  if (!isSupabaseConfigured) return null
   try {
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select('state')
-      .eq('user_id', userId)
-      .single()
-    if (error || !data) return null
-    return data.state as AppState
+    const res = await dbFetch(`${TABLE}?user_id=eq.${userId}&select=state`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return (data[0]?.state as AppState) ?? null
   } catch {
     return null
   }
 }
 
 export async function saveToCloud(state: AppState, userId: string): Promise<boolean> {
-  if (!supabase) return false
+  if (!isSupabaseConfigured) return false
   try {
-    const { error } = await supabase
-      .from(TABLE)
-      .upsert(
-        { user_id: userId, state, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      )
-    if (error) console.error('[cloudSync] save error:', error.message)
-    return !error
+    const res = await dbFetch(TABLE, {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates' },
+      body: JSON.stringify({ user_id: userId, state, updated_at: new Date().toISOString() }),
+    })
+    if (!res.ok) console.error('[cloudSync] save error:', res.status, await res.text())
+    return res.ok
   } catch (e) {
     console.error('[cloudSync] save exception:', e)
     return false
