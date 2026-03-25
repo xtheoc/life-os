@@ -16,7 +16,7 @@ export default function Home() {
       {/* Page header */}
       <div className="mb-6">
         <h1 className="text-2xl font-display font-bold text-white mb-0.5">
-          {format(today, 'EEEE, dd MMMM yyyy')}
+          {format(today, 'EEE dd/MM/yy')}
         </h1>
         <p className="text-muted text-sm">Your day at a glance</p>
       </div>
