@@ -29,14 +29,18 @@ export async function loadFromCloud(): Promise<AppState | null> {
 export async function saveToCloud(state: AppState): Promise<boolean> {
   if (!supabase) return false
   try {
+    console.log('[cloudSync] getting session...')
     const session = await getSession()
+    console.log('[cloudSync] session user:', session?.user?.email ?? 'null')
     if (!session?.user) return false
+    console.log('[cloudSync] upserting...')
     const { error } = await supabase
       .from(TABLE)
       .upsert(
         { user_id: session.user.id, state, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       )
+    console.log('[cloudSync] upsert done, error:', error?.message ?? 'none')
     if (error) console.error('[cloudSync] save error:', error.message)
     return !error
   } catch (e) {
