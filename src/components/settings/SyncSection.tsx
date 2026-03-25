@@ -98,7 +98,7 @@ export default function SyncSection() {
         <div className="flex items-start gap-3 p-3 bg-accent/10 border border-accent/30 rounded-xl">
           <CheckCircle2 size={15} className="text-accent mt-0.5 shrink-0" />
           <p className="text-xs text-muted">
-            We sent a 6-digit code to <strong className="text-white">{email}</strong>. Enter it below.
+            We sent a code to <strong className="text-white">{email}</strong>. Enter it below.
           </p>
         </div>
         <div className="flex gap-2">
@@ -106,9 +106,9 @@ export default function SyncSection() {
             type="text"
             inputMode="numeric"
             value={code}
-            onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="000000"
-            maxLength={6}
+            onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+            placeholder="········"
+            maxLength={8}
             required
             autoFocus
             className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-muted outline-none focus:border-accent transition-colors tracking-widest text-center font-mono"
@@ -133,7 +133,7 @@ export default function SyncSection() {
   return (
     <form onSubmit={handleSendCode} className="space-y-3">
       <p className="text-xs text-muted">
-        Sign in with your email to sync across all devices. We'll send you a 6-digit code — no password needed.
+        Sign in with your email to sync across all devices. We'll send you a code — no password needed.
       </p>
       <div className="flex gap-2">
         <input
