@@ -467,14 +467,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     storage.set(STORAGE_KEY, state)
 
-    console.log('[sync] state changed, user:', userRef.current?.email ?? 'null')
     if (!isSupabaseConfigured || !userRef.current) return
+    const userId = userRef.current.id
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
-      console.log('[sync] saving to cloud...')
       setSyncStatus(s => ({ ...s, syncing: true, error: null }))
-      const ok = await saveToCloud(state)
-      console.log('[sync] save result:', ok)
+      const ok = await saveToCloud(state, userId)
       setSyncStatus(s => ({
         ...s,
         syncing: false,
@@ -494,7 +492,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       userRef.current = user
       setSyncStatus(s => ({ ...s, user }))
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && user) {
-        const cloudState = await loadFromCloud()
+        const cloudState = await loadFromCloud(user.id)
         if (cloudState?.initialized) {
           dispatch({ type: 'LOAD_STATE', payload: cloudState })
         }
@@ -518,7 +516,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     syncNow: async () => {
       setSyncStatus(s => ({ ...s, syncing: true, error: null }))
-      const ok = await saveToCloud(stateRef.current)
+      const ok = userRef.current ? await saveToCloud(stateRef.current, userRef.current.id) : false
       setSyncStatus(s => ({
         ...s,
         syncing: false,
