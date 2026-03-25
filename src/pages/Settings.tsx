@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAppState, useAppDispatch } from '../context/AppContext'
 import { createSeedData } from '../data/seedData'
 import type { UserPreferences, DayOfWeek, TransactionCategory } from '../types'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Download, Upload } from 'lucide-react'
 import SyncSection from '../components/settings/SyncSection'
 
 const BUDGET_CATEGORIES: TransactionCategory[] = [
@@ -138,6 +138,38 @@ export default function Settings() {
     dispatch({ type: 'CLEAR_ALL_DATA' })
   }
 
+  const importRef = useRef<HTMLInputElement>(null)
+
+  function exportData() {
+    const raw = localStorage.getItem('life-os-v1')
+    if (!raw) return
+    const blob = new Blob([raw], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `life-os-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function importData(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      try {
+        const text = ev.target?.result as string
+        JSON.parse(text) // validate
+        localStorage.setItem('life-os-v1', text)
+        window.location.reload()
+      } catch {
+        alert('Invalid backup file.')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -258,6 +290,24 @@ export default function Settings() {
         className="w-full py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:bg-accent/80 transition-colors">
         {saved ? '✓ Saved' : 'Save preferences'}
       </button>
+
+      {/* Backup */}
+      <Section title="Backup & transfer">
+        <p className="text-xs text-muted">Export your data to move it to another device or browser, then import it there.</p>
+        <input ref={importRef} type="file" accept=".json" className="hidden" onChange={importData} />
+        <div className="flex gap-3">
+          <button
+            onClick={exportData}
+            className="flex-1 flex items-center justify-center gap-2 py-2 bg-surface border border-border rounded-xl text-sm text-white hover:border-accent transition-colors">
+            <Download size={15} /> Export data
+          </button>
+          <button
+            onClick={() => importRef.current?.click()}
+            className="flex-1 flex items-center justify-center gap-2 py-2 bg-surface border border-border rounded-xl text-sm text-white hover:border-accent transition-colors">
+            <Upload size={15} /> Import data
+          </button>
+        </div>
+      </Section>
 
       {/* Data management */}
       <Section title="Data management">
