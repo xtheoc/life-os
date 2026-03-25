@@ -13,7 +13,7 @@ import type { User } from '@supabase/supabase-js'
 import { storage } from '../lib/storage'
 import { createSeedData } from '../data/seedData'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { loadFromCloud, saveToCloud, signInWithMagicLink, signOut as supabaseSignOut } from '../lib/cloudSync'
+import { loadFromCloud, saveToCloud, signInWithOtp, verifyOtp as verifySupabaseOtp, signOut as supabaseSignOut } from '../lib/cloudSync'
 import type { AppState, AppAction, UserPreferences } from '../types'
 
 // ─── Storage key ─────────────────────────────────────────────────────────────
@@ -408,6 +408,7 @@ export interface SyncStatus {
 
 interface SyncActions {
   signIn: (email: string) => Promise<{ error?: string }>
+  verifyOtp: (email: string, token: string) => Promise<{ error?: string }>
   signOut: () => Promise<void>
   syncNow: () => Promise<void>
 }
@@ -417,6 +418,7 @@ const SyncStatusContext = createContext<SyncStatus>({
 })
 const SyncActionsContext = createContext<SyncActions>({
   signIn: async () => ({}),
+  verifyOtp: async () => ({}),
   signOut: async () => {},
   syncNow: async () => {},
 })
@@ -513,7 +515,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const syncActions = useMemo<SyncActions>(() => ({
-    signIn: signInWithMagicLink,
+    signIn: signInWithOtp,
+    verifyOtp: verifySupabaseOtp,
     signOut: async () => {
       await supabaseSignOut()
       setSyncStatus(s => ({ ...s, user: null, lastSynced: null }))

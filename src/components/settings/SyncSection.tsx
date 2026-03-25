@@ -6,11 +6,12 @@ export default function SyncSection() {
   const sync = useSyncStatus()
   const actions = useSyncActions()
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
+  const [code, setCode] = useState('')
+  const [step, setStep] = useState<'email' | 'code'>('email')
   const [loading, setLoading] = useState(false)
   const [authError, setAuthError] = useState('')
 
-  async function handleSignIn(e: React.FormEvent) {
+  async function handleSendCode(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) return
     setLoading(true)
@@ -18,7 +19,18 @@ export default function SyncSection() {
     const { error } = await actions.signIn(email.trim())
     setLoading(false)
     if (error) { setAuthError(error); return }
-    setSent(true)
+    setStep('code')
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    if (!code.trim()) return
+    setLoading(true)
+    setAuthError('')
+    const { error } = await actions.verifyOtp(email.trim(), code.trim())
+    setLoading(false)
+    if (error) { setAuthError('Invalid code — check your email and try again'); return }
+    // onAuthStateChange will update sync.user automatically
   }
 
   if (!sync.configured) {
@@ -29,13 +41,7 @@ export default function SyncSection() {
           <p className="text-sm text-white font-semibold">Cloud sync not configured</p>
           <p className="text-xs text-muted mt-1">
             Add <code className="bg-white/10 px-1 rounded text-accent">VITE_SUPABASE_URL</code> and{' '}
-            <code className="bg-white/10 px-1 rounded text-accent">VITE_SUPABASE_ANON_KEY</code> to a{' '}
-            <code className="bg-white/10 px-1 rounded text-accent">.env.local</code> file, then restart the dev server.
-          </p>
-          <p className="text-xs text-muted mt-2">
-            <a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-accent hover:underline">
-              Create a free Supabase project →
-            </a>
+            <code className="bg-white/10 px-1 rounded text-accent">VITE_SUPABASE_ANON_KEY</code> to Vercel environment variables.
           </p>
         </div>
       </div>
@@ -86,28 +92,48 @@ export default function SyncSection() {
     )
   }
 
-  // Not signed in
-  if (sent) {
+  if (step === 'code') {
     return (
-      <div className="flex items-start gap-3 p-4 bg-accent/10 border border-accent/30 rounded-xl">
-        <CheckCircle2 size={16} className="text-accent mt-0.5 shrink-0" />
-        <div>
-          <p className="text-sm text-white font-semibold">Check your email</p>
-          <p className="text-xs text-muted mt-1">
-            We sent a magic link to <strong className="text-white">{email}</strong>. Click it to sign in — no password needed.
+      <form onSubmit={handleVerify} className="space-y-3">
+        <div className="flex items-start gap-3 p-3 bg-accent/10 border border-accent/30 rounded-xl">
+          <CheckCircle2 size={15} className="text-accent mt-0.5 shrink-0" />
+          <p className="text-xs text-muted">
+            We sent a 6-digit code to <strong className="text-white">{email}</strong>. Enter it below.
           </p>
-          <button onClick={() => setSent(false)} className="text-xs text-accent hover:underline mt-2">
-            Use a different email
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={code}
+            onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="000000"
+            maxLength={6}
+            required
+            autoFocus
+            className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-muted outline-none focus:border-accent transition-colors tracking-widest text-center font-mono"
+          />
+          <button
+            type="submit"
+            disabled={loading || code.length < 6}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-white text-sm font-semibold hover:bg-accent/80 transition-colors disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : 'Verify'}
           </button>
         </div>
-      </div>
+        {authError && <p className="text-xs text-danger">{authError}</p>}
+        <button type="button" onClick={() => { setStep('email'); setCode(''); setAuthError('') }}
+          className="text-xs text-muted hover:text-white transition-colors">
+          ← Use a different email
+        </button>
+      </form>
     )
   }
 
   return (
-    <form onSubmit={handleSignIn} className="space-y-3">
+    <form onSubmit={handleSendCode} className="space-y-3">
       <p className="text-xs text-muted">
-        Sign in with your email to sync your data across all your devices. We'll send you a magic link — no password needed.
+        Sign in with your email to sync across all devices. We'll send you a 6-digit code — no password needed.
       </p>
       <div className="flex gap-2">
         <input
@@ -124,7 +150,7 @@ export default function SyncSection() {
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-white text-sm font-semibold hover:bg-accent/80 transition-colors disabled:opacity-50"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
-          {loading ? 'Sending…' : 'Send link'}
+          {loading ? 'Sending…' : 'Send code'}
         </button>
       </div>
       {authError && <p className="text-xs text-danger">{authError}</p>}

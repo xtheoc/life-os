@@ -37,12 +37,18 @@ export async function saveToCloud(state: AppState): Promise<boolean> {
   }
 }
 
-export async function signInWithMagicLink(email: string): Promise<{ error?: string }> {
+export async function signInWithOtp(email: string): Promise<{ error?: string }> {
   if (!supabase) return { error: 'Supabase not configured' }
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: window.location.origin },
+    options: { shouldCreateUser: true },
   })
+  return { error: error?.message }
+}
+
+export async function verifyOtp(email: string, token: string): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Supabase not configured' }
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
   return { error: error?.message }
 }
 
