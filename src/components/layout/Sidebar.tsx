@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   Home, GraduationCap, ListChecks, TrendingUp, CalendarDays,
   Dumbbell, Moon, Settings, LayoutDashboard, Sparkles,
-  ChevronDown, ChevronRight, ClipboardList, CalendarClock,
+  ChevronDown, ChevronRight, ClipboardList,
 } from 'lucide-react'
 
 function NavItem({
@@ -62,7 +62,6 @@ export default function Sidebar() {
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         <NavItem to="/" icon={Home} label="Home" end />
         <NavItem to="/calendar" icon={CalendarDays} label="Calendar" />
-        <NavItem to="/planner" icon={CalendarClock} label="Today's Plan" />
         <NavItem to="/school" icon={GraduationCap} label="School" />
 
         <Group label="To-Do">

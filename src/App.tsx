@@ -25,7 +25,6 @@ export default function App() {
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/finance" element={<Finance />} />
             <Route path="/calendar" element={<Calendar />} />
-            <Route path="/planner" element={<Calendar />} />
             <Route path="/workout" element={<Workout />} />
             <Route path="/sleep" element={<Sleep />} />
             <Route path="/chores" element={<Chores />} />
