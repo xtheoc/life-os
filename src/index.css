@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-bg text-slate-100 antialiased;
+    font-family: 'Syne', system-ui, sans-serif;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Syne', system-ui, sans-serif;
+  }
+  .font-mono {
+    font-family: 'DM Mono', Consolas, monospace;
+  }
+}

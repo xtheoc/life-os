@@ -1,0 +1,13 @@
+{
+  "name": "Life OS",
+  "short_name": "Life OS",
+  "description": "Your personal life operating system",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

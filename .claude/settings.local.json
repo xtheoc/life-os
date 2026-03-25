@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Set-Location c:\\\\test; npm install; Write-Host ''EXIT:'' $LASTEXITCODE\")",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
