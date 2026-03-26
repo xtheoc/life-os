@@ -26,7 +26,7 @@ const MORE_NAV = [
   { to: '/chores', icon: Sparkles, label: 'Chores' },
   { to: '/finance', icon: TrendingUp, label: 'Finance' },
   { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
-  { to: '/review', icon: ClipboardList, label: 'Review' },
+  { to: '/review', icon: ClipboardList, label: 'Planner' },
   { to: '/sleep', icon: Moon, label: 'Sleep' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]

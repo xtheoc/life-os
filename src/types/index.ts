@@ -82,12 +82,21 @@ export interface Task {
   priority: Priority
   /** ISO date yyyy-MM-dd, omitted if no deadline */
   dueDate?: string
+  /** ISO date yyyy-MM-dd — day this task is planned for in the weekly planner */
+  scheduledDate?: string
   /** Estimated time in minutes, omitted if unknown */
   estimatedMinutes?: number
   completed: boolean
   completedAt?: string
   createdAt: string
   notes?: string
+}
+
+export interface ChoreAssignment {
+  id: string
+  choreId: string
+  /** ISO date yyyy-MM-dd — day this chore is planned for */
+  date: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -332,6 +341,7 @@ export interface AppState {
   tasks: Task[]
   recurringEvents: RecurringEvent[]
   choreSchedules: ChoreSchedule[]
+  choreAssignments: ChoreAssignment[]
   workoutPlan: WorkoutPlan
   workoutPrograms: WorkoutProgram[]
   workoutSessions: WorkoutSession[]
@@ -384,6 +394,8 @@ export type AppAction =
   | { type: 'UPDATE_CHORE_SCHEDULE'; payload: ChoreSchedule }
   | { type: 'DELETE_CHORE_SCHEDULE'; payload: { id: string } }
   | { type: 'MARK_CHORE_DONE'; payload: { id: string; date: string } }
+  | { type: 'ASSIGN_CHORE'; payload: ChoreAssignment }
+  | { type: 'UNASSIGN_CHORE'; payload: { choreId: string } }
   // Workout plan
   | { type: 'SET_WORKOUT_PLAN'; payload: WorkoutPlan }
   | { type: 'SET_WORKOUT_PROGRAMS'; payload: WorkoutProgram[] }

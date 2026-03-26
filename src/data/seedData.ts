@@ -740,6 +740,7 @@ export function createSeedData(): AppState {
     tasks,
     recurringEvents,
     choreSchedules,
+    choreAssignments: [],
     workoutPlan,
     workoutPrograms,
     workoutSessions,

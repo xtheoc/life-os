@@ -46,6 +46,7 @@ export function emptyState(prefs?: UserPreferences): AppState {
     tasks: [],
     recurringEvents: [],
     choreSchedules: [],
+    choreAssignments: [],
     workoutPlan: { days: [] },
     workoutPrograms: [],
     workoutSessions: [],
@@ -74,6 +75,7 @@ function safeLoad(raw: unknown): AppState {
       tasks: Array.isArray(s.tasks) ? s.tasks : [],
       recurringEvents: Array.isArray(s.recurringEvents) ? s.recurringEvents : [],
       choreSchedules: Array.isArray(s.choreSchedules) ? s.choreSchedules : [],
+      choreAssignments: Array.isArray(s.choreAssignments) ? s.choreAssignments : [],
       workoutPlan: s.workoutPlan ?? { days: [] },
       workoutPrograms: Array.isArray(s.workoutPrograms) ? s.workoutPrograms : [],
       workoutSessions: Array.isArray(s.workoutSessions) ? s.workoutSessions : [],
@@ -243,6 +245,16 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, choreSchedules: state.choreSchedules.filter(c => c.id !== action.payload.id) }
     case 'MARK_CHORE_DONE':
       return { ...state, choreSchedules: state.choreSchedules.map(c => c.id === action.payload.id ? { ...c, lastDone: action.payload.date } : c) }
+    case 'ASSIGN_CHORE':
+      return {
+        ...state,
+        choreAssignments: [
+          ...state.choreAssignments.filter(a => a.choreId !== action.payload.choreId),
+          action.payload,
+        ],
+      }
+    case 'UNASSIGN_CHORE':
+      return { ...state, choreAssignments: state.choreAssignments.filter(a => a.choreId !== action.payload.choreId) }
 
     // ── Workout plan ─────────────────────────────────────────────────────────
     case 'SET_WORKOUT_PLAN':

@@ -78,7 +78,7 @@ export default function Sidebar() {
 
       {/* Weekly Review + Settings pinned at bottom */}
       <div className="p-3 border-t border-border space-y-0.5">
-        <NavItem to="/review" icon={ClipboardList} label="Weekly Review" />
+        <NavItem to="/review" icon={ClipboardList} label="Week Planner" />
         <NavItem to="/settings" icon={Settings} label="Settings" />
       </div>
     </aside>
